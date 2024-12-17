@@ -1,3 +1,5 @@
+use priority_queue::PriorityQueue;
+use std::cmp::Reverse;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 
@@ -10,19 +12,14 @@ struct Pos {
 fn main() {
     let filename = "input2.txt";
     let input = fs::read_to_string(filename).unwrap();
-    let grid: Vec<Vec<char>> = input
-        .lines()
-        .map(|line| line.chars().map(|c| if c == 'S' { '.' } else { c }).collect())
-        .collect();
+    let grid: Vec<Vec<char>> = input.lines().map(|line| line.chars().map(|c| if c == 'S' { '.' } else { c }).collect()).collect();
     let start_pos = (1, grid.len() as i32 - 2);
-    let current_pos = Pos {
-        pos: start_pos,
-        dir: (1, 0),
-    };
+    let current_pos = Pos { pos: start_pos, dir: (1, 0) };
 
     let mut visited: HashMap<Pos, i32> = HashMap::new();
-    let mut part1 = i32::MAX;
-    dfs(&grid, current_pos, 0, &mut part1, &mut visited);
+    //let mut part1 = i32::MAX;
+    //dfs(&grid, current_pos, 0, &mut part1, &mut visited);
+    let part1 = bfs(&grid, current_pos);
     println!("part1: {}", part1);
 
     let part1 = if filename == "input1.txt" { part1 } else { 135536 };
@@ -31,6 +28,36 @@ fn main() {
     let mut result: HashSet<(i32, i32)> = HashSet::new();
     dfs2(&grid, current_pos, 0, part1, &mut visited, &mut path, &mut result);
     println!("part2: {}", result.len());
+}
+
+fn bfs(grid: &[Vec<char>], start_pos: Pos) -> i32 {
+    let mut visited: HashMap<Pos, i32> = HashMap::new();
+    let mut pq = PriorityQueue::new();
+    pq.push(start_pos, Reverse(0));
+    while let Some((current, cost)) = pq.pop() {
+        if let Some(vc) = visited.get(&current) {
+            if *vc <= cost.0 {
+                continue;
+            }
+        }
+        visited.insert(current, cost.0);
+
+        let (x, y) = current.pos;
+        let current_char = grid[y as usize][x as usize];
+        if current_char == 'E' {
+            return cost.0;
+        }
+        if current_char == '#' {
+            continue;
+        }
+
+        let (dx, dy) = current.dir;
+        pq.push(Pos { pos: (x + dx, y + dy), dir: (dx, dy) }, Reverse(cost.0 + 1));
+        pq.push(Pos { pos: (x, y), dir: rotate_left(dx, dy) }, Reverse(cost.0 + 1000));
+        pq.push(Pos { pos: (x, y), dir: rotate_right(dx, dy) }, Reverse(cost.0 + 1000));
+    }
+
+    0
 }
 
 fn dfs2(
@@ -81,27 +108,18 @@ fn dfs2(
     visited.insert(current_pos, cost);
 
     let (dx, dy) = current_pos.dir;
-    let next_pos = Pos {
-        pos: (x + dx, y + dy),
-        dir: (dx, dy),
-    };
+    let next_pos = Pos { pos: (x + dx, y + dy), dir: (dx, dy) };
 
     let (nx, ny) = next_pos.pos;
     if nx > 0 && ny > 0 && nx < grid[0].len() as i32 || ny < grid.len() as i32 {
         dfs2(grid, next_pos, cost + 1, max_cost, visited, path, result);
     }
 
-    let next_pos = Pos {
-        pos: (x, y),
-        dir: rotate_left(dx, dy),
-    };
+    let next_pos = Pos { pos: (x, y), dir: rotate_left(dx, dy) };
 
     dfs2(grid, next_pos, cost + 1000, max_cost, visited, path, result);
 
-    let next_pos = Pos {
-        pos: (x, y),
-        dir: rotate_right(dx, dy),
-    };
+    let next_pos = Pos { pos: (x, y), dir: rotate_right(dx, dy) };
     dfs2(grid, next_pos, cost + 1000, max_cost, visited, path, result);
 
     path.pop();
@@ -135,27 +153,18 @@ fn dfs(grid: &Vec<Vec<char>>, current_pos: Pos, cost: i32, min_cost: &mut i32, v
     visited.insert(current_pos, cost);
 
     let (dx, dy) = current_pos.dir;
-    let next_pos = Pos {
-        pos: (x + dx, y + dy),
-        dir: (dx, dy),
-    };
+    let next_pos = Pos { pos: (x + dx, y + dy), dir: (dx, dy) };
 
     let (nx, ny) = next_pos.pos;
     if nx > 0 && ny > 0 && nx < grid[0].len() as i32 || ny < grid.len() as i32 {
         dfs(grid, next_pos, cost + 1, min_cost, visited);
     }
 
-    let next_pos = Pos {
-        pos: (x, y),
-        dir: rotate_left(dx, dy),
-    };
+    let next_pos = Pos { pos: (x, y), dir: rotate_left(dx, dy) };
 
     dfs(grid, next_pos, cost + 1000, min_cost, visited);
 
-    let next_pos = Pos {
-        pos: (x, y),
-        dir: rotate_right(dx, dy),
-    };
+    let next_pos = Pos { pos: (x, y), dir: rotate_right(dx, dy) };
     dfs(grid, next_pos, cost + 1000, min_cost, visited);
 }
 fn rotate_left(dx: i32, dy: i32) -> (i32, i32) {
