@@ -1,0 +1,12 @@
+[package]
+name = "day21"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+getch-rs = "0.2.0"
+itertools = "0.13.0"
+memoize = "0.4.2"
+num = "0.4.3"
+priority-queue = "2.1.1"
+regex = "1.11.1"
