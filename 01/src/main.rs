@@ -1,45 +1,23 @@
 use std::collections::HashMap;
-use std::{
-    fs::File,
-    io::{self, BufRead},
-    iter::zip,
-};
+use std::iter::*;
+
+use itertools::{Either, Itertools};
 
 fn main() {
-    let filename = "input2.txt";
-    let file = File::open(filename).unwrap();
-    let lines: Vec<_> = io::BufReader::new(file).lines().collect::<Result<_, _>>().unwrap();
+    let input = std::fs::read_to_string("input2.txt").unwrap();
+    let (left, right): (Vec<i32>, Vec<i32>) = input
+        .split_whitespace()
+        .filter_map(|s| s.parse::<i32>().ok())
+        .enumerate()
+        .partition_map(|(i, v)| if i & 1 == 0 { Either::Left(v) } else { Either::Right(v) });
+    let part1: i32 = zip(left.iter().sorted(), right.iter().sorted()).map(|(l, r)| (r - l).abs()).sum();
+    println!("part1: {}", part1);
 
-    let mut left: Vec<i32> = Vec::new();
-    let mut right: Vec<i32> = Vec::new();
-    lines.iter().for_each(|line| {
-        //println!("'{}'", line);
-        let splits = line.split("  ").collect::<Vec<&str>>();
-        left.push(splits[0].trim().parse::<i32>().unwrap());
-        right.push(splits[1].trim().parse::<i32>().unwrap());
-    });
-    left.sort();
-    right.sort();
-
-    let mut dists = 0;
-    zip(left.iter(), right.iter()).for_each(|(l, r)| {
-        //println!("{} {}", l, r);
-        dists += (r - l).abs();
-    });
-
-    println!("part1: {}", dists);
-
+    // part2
     let right_map = right.iter().fold(HashMap::new(), |mut acc, c| {
         *acc.entry(c).or_insert(0) += 1;
         acc
     });
-    //println!("{:?}", right_map);
-
-    let mut score = 0;
-    left.iter().for_each(|l| {
-        if let Some(count) = right_map.get(l) {
-            score += l * count;
-        }
-    });
-    println!("part2: {}", score);
+    let part2 = left.iter().map(|l| l * right_map.get(l).unwrap_or(&0)).sum::<i32>();
+    println!("part2: {}", part2);
 }
